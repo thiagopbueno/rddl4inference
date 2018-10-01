@@ -1,0 +1,79 @@
+domain example_v1 {
+
+    requirements = {
+        inference
+    };
+
+    types {
+        dim : object;
+    };
+
+    pvariables {
+
+        AVG_BASE_VALUE(dim)  : { non-fluent, real, default = 15.0 };
+        AVG_RATIO(dim)       : { non-fluent, real, default = 0.010 };
+
+        STDDEV_BASE_VALUE(dim)  : { non-fluent, real, default = 5.0 };
+        STDDEV_RATIO(dim)       : { non-fluent, real, default = 0.010 };
+
+        b(dim)  : { fluent, real, level = 0 };
+
+        z1(dim) : { fluent, real, level = 0 };
+        z2(dim) : { variable, real };
+
+        x_avg(dim)    : { fluent, real, level = 1 };
+        x_stddev(dim) : { fluent, real, level = 1 };
+
+        x(dim) : { fluent, real, default = 0.0 };
+    };
+
+    cpfs {
+
+        b(?d) = Laplace( 5.0, 1.0 );
+        z1(?d) = Gamma( 3.0, 2.0 );
+
+        x_avg(?d) = ( b(?d) * AVG_BASE_VALUE(?d) ) + AVG_RATIO(?d) * z1(?d);
+        x_stddev(?d) = ( STDDEV_BASE_VALUE(?d) + STDDEV_RATIO(?d) * z2(?d) ) ** 2;
+
+        x(?d) = Normal( x_avg(?d), x_stddev(?d) );
+    };
+
+    query = sum_{?d : dim} [ x(?d) * (x(?d) - 5.0) ];
+}
+
+
+non-fluents nf_example_v1 {
+
+    domain = example_v1;
+
+    objects {
+        dim : { d1, d2 };
+    };
+
+    non-fluents {
+        AVG_BASE_VALUE(dim1) = 15.0;
+        AVG_RATIO(dim1) = 0.001;
+        
+        AVG_BASE_VALUE(dim2) = 15.0;
+        AVG_RATIO(dim2) = 0.0015;
+
+        STDDEV_BASE_VALUE(dim1) = 5.0;
+        STDDEV_RATIO(dim1) = 0.02;
+        
+        STDDEV_BASE_VALUE(dim2) = 10.0;
+        STDDEV_RATIO(dim2) = -0.01;
+    };
+}
+
+
+instance inst_example_v1 {
+    domain = example_v1;
+    non-fluents = nf_example_v1;
+
+    variables { z1 };
+
+    evidence {
+        b(d1) = 0.5;
+        b(d2) = 0.99;
+    };
+}
